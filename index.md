@@ -1,6 +1,5 @@
 ---
 layout: home
-title: "Aufheben"
 ---
 
-A repository of thoughts, fragments, and readings.
+a repository of thoughts, fragments, and readings.

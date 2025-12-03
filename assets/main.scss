@@ -1,0 +1,51 @@
+---
+---
+
+// Retro olive/orange palette
+$background-color: #f5f0e6;      // Warm cream
+$text-color: #3d3d3d;            // Soft dark gray
+$brand-color: #8b9a6d;           // Muted olive
+$brand-color-light: #a8b88c;     // Light olive
+$brand-color-dark: #6b7a4d;      // Dark olive
+$link-base-color: #c97b4a;       // Warm orange
+$link-hover-color: #a85d32;      // Darker orange on hover
+$link-visited-color: #8b9a6d;    // Olive for visited
+$grey-color: #6b6b6b;            // Muted gray
+$grey-color-light: #d4cfc2;      // Light warm gray
+$grey-color-dark: #4a4a4a;       // Dark gray
+
+@import "minima";
+
+// Additional retro styling
+body {
+  background-color: $background-color;
+}
+
+.site-header {
+  border-top: 3px solid $brand-color;
+  border-bottom: 1px solid $grey-color-light;
+}
+
+.site-title {
+  color: $brand-color-dark;
+
+  &:visited {
+    color: $brand-color-dark;
+  }
+}
+
+a {
+  color: $link-base-color;
+
+  &:hover {
+    color: $link-hover-color;
+  }
+}
+
+.post-link {
+  color: $brand-color-dark;
+
+  &:hover {
+    color: $link-base-color;
+  }
+}
