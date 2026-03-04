@@ -44,16 +44,20 @@ From hundreds of individual comments, Claude identified 10 major categories:
 
 For each category, Claude extracted specific anti-patterns along with concrete fixes.
 
+<details markdown="1">
+<summary>view extracted patterns</summary>
+
 **logic and bug detection**
 
 The most common issues were missing null reference guards, boolean operator precedence errors, transaction scope violations, and exception type mismatches.
 
 ```csharp
-// wrong: && binds tighter than ||
-if (a && b || c && d)
+// wrong: intended "(guest or authenticated) AND terms accepted"
+// actual: guest always gets access regardless of terms
+if (isGuest || isAuthenticated && hasAcceptedTerms)
 
-// correct: explicit grouping
-if ((a && b) || (c && d))
+// correct: explicit grouping enforces the intended logic
+if ((isGuest || isAuthenticated) && hasAcceptedTerms)
 ```
 
 ```csharp
@@ -130,24 +134,31 @@ SELECT ... ORDER BY Id FirstOrDefault()
 
 Breaking changes to response keys, payload format changes without versioning, and missing backward compatibility.
 
+</details>
+
 ### step 4: knowledge persistence
 
 Using a custom `/learn` command, these insights get saved to a structured memory file that Claude Code references in future sessions. The system effectively teaches itself the team's standards over time.
 
 Here's the actual output — seven entries written to `lessons.md`:
 
+<details markdown="1">
+<summary>view lessons.md entries</summary>
+
 ---
 
 **Entry 1 — logic: boolean operator precedence**
 
-`&&` binds tighter than `||`, so mixed expressions without explicit grouping evaluate in unexpected order. Always use parentheses when combining `&&` and `||` in the same condition.
+`&&` binds tighter than `||`. When both appear in the same condition without parentheses, the evaluation order is likely not what the developer intended — and in access-control logic, it becomes a security bug. Always use explicit grouping.
 
 ```csharp
-// ❌ Evaluated as (a && b) || (c && d) — may not be what was intended
-if (a && b || c && d)
+// ❌ Reads like "(guest or authenticated) AND terms accepted"
+// Evaluates as: isGuest || (isAuthenticated && hasAcceptedTerms)
+// Guests bypass the terms check entirely
+if (isGuest || isAuthenticated && hasAcceptedTerms)
 
-// ✅ Intent is explicit and unambiguous
-if ((a && b) || (c && d))
+// ✅ Parentheses enforce the intended logic
+if ((isGuest || isAuthenticated) && hasAcceptedTerms)
 ```
 
 ---
@@ -254,6 +265,8 @@ var latest = _db.Invoices
 ```
 
 ---
+
+</details>
 
 ## what this enables
 
