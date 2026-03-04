@@ -173,6 +173,8 @@ if (isGuest || isAuthenticated && hasAcceptedTerms)
 if ((isGuest || isAuthenticated) && hasAcceptedTerms)
 ```
 
+*Tags: logic, boolean, operator-precedence, security, access-control*
+
 ---
 
 **Entry 2 — logic: exception type too narrow**
@@ -186,6 +188,8 @@ catch (JsonReaderException ex)
 // ✅ Catches the full JSON exception hierarchy
 catch (JsonException ex)
 ```
+
+*Tags: logic, exception-handling, json, error-handling*
 
 ---
 
@@ -202,6 +206,8 @@ valid = ValidateCustomFields();
 valid &= ValidateRequiredFields();
 valid &= ValidateCustomFields();
 ```
+
+*Tags: data-integrity, validation, assignment, accumulation*
 
 ---
 
@@ -221,6 +227,8 @@ public MyService(Config config) {
 public HashSet<string> ExcludedItems => _excludedItems;
 ```
 
+*Tags: performance, allocation, HashSet, property-getter, caching*
+
 ---
 
 **Entry 5 — testing: async NSubstitute stubs must wrap in Task**
@@ -236,6 +244,8 @@ _repository.GetByIdAsync(id).ReturnsNull();
 _repository.GetByIdAsync(id).Returns(Task.FromResult(entity));
 _repository.GetByIdAsync(id).Returns(Task.FromResult<Entity>(null));
 ```
+
+*Tags: testing, async, NSubstitute, mocking, Task*
 
 ---
 
@@ -257,6 +267,8 @@ await _db.SaveChangesAsync();
 await tx.CommitAsync();
 ```
 
+*Tags: transaction-scope, database, HTTP, concurrency, deadlock*
+
 ---
 
 **Entry 7 — database: FirstOrDefault without OrderBy is non-deterministic**
@@ -275,6 +287,8 @@ var latest = _db.Invoices
     .OrderByDescending(x => x.CreatedAt)
     .FirstOrDefault();
 ```
+
+*Tags: database, SQL, FirstOrDefault, OrderBy, non-deterministic*
 
 ---
 
