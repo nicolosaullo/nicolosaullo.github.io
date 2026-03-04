@@ -1,6 +1,6 @@
 ---
 layout: post
-title: what you can do with claude code pt.1 - mining pr reviews
+title: claude code - mining pr reviews
 ---
 
 ## the challenge
