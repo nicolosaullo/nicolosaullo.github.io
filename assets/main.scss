@@ -49,3 +49,89 @@ a {
     color: $link-base-color;
   }
 }
+
+// Footer social icons
+.site-footer {
+  border-top: 1px solid $grey-color-light;
+  padding: 1.5em 0;
+  text-align: center;
+}
+
+.footer-social {
+  display: flex;
+  justify-content: center;
+  gap: 1.2em;
+
+  a {
+    display: inline-flex;
+    color: $grey-color;
+    transition: color 0.2s;
+
+    &:hover {
+      color: $link-hover-color;
+    }
+  }
+}
+
+.social-icon {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+// Details/summary styled as an external document snippet
+details {
+  background-color: #fefefe;
+  border: 1px solid #d0cbbe;
+  border-left: 4px solid $brand-color;
+  border-radius: 3px;
+  box-shadow: 2px 3px 10px rgba(0, 0, 0, 0.08);
+  padding: 1em 1.5em 1em 1.5em;
+  margin: 1.5em 0;
+  font-size: 0.92em;
+  color: #4a4a4a;
+
+  summary {
+    font-size: 0.88em;
+    font-family: monospace;
+    letter-spacing: 0.03em;
+    color: $brand-color-dark;
+    cursor: pointer;
+    margin: -1em -1.5em -1em -1.5em;
+    padding: 0.6em 1.5em;
+    background-color: #f0ece0;
+    border-bottom: 1px solid #d0cbbe;
+    border-radius: 2px 2px 0 0;
+    list-style: none;
+
+    &::-webkit-details-marker { display: none; }
+
+    &::before {
+      content: "▶ ";
+      font-size: 0.75em;
+      color: $brand-color;
+    }
+  }
+
+  &[open] summary {
+    margin-bottom: 1.2em;
+    border-radius: 2px 2px 0 0;
+
+    &::before {
+      content: "▼ ";
+    }
+  }
+
+  p, li {
+    line-height: 1.65;
+  }
+
+  pre, code {
+    font-size: 0.9em;
+    background-color: #f5f2ea;
+  }
+
+  hr {
+    border-color: #e0dbd0;
+  }
+}
