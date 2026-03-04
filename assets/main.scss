@@ -5,17 +5,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 // ─── Palette ─────────────────────────────────────────────────────────────────
-$background-color: #f5f0e6;
-$text-color:        #2e2e2e;
-$brand-color:       #8b9a6d;
-$brand-color-light: #a8b88c;
-$brand-color-dark:  #6b7a4d;
-$link-base-color:   #c97b4a;
-$link-hover-color:  #a85d32;
-$link-visited-color:#8b9a6d;
-$grey-color:        #6b6b6b;
-$grey-color-light:  #d4cfc2;
-$grey-color-dark:   #4a4a4a;
+$background-color:   #f5f0e6;
+$text-color:         #2e2e2e;
+$brand-color:        #8b9a6d;   // olive — h3, borders, accents
+$brand-color-light:  #a8b88c;   // light olive
+$brand-color-dark:   #6b7a4d;   // dark olive — h1, h2, site title
+$link-base-color:    #c97b4a;   // warm orange
+$link-hover-color:   #a85d32;
+$link-visited-color: #8b9a6d;
+$grey-color:         #6b6b6b;
+$grey-color-light:   #d4cfc2;
+$grey-color-dark:    #4a4a4a;
+
+// ─── Spacing scale (base 4px) ─────────────────────────────────────────────────
+// sp(1)=0.25rem  sp(2)=0.5rem  sp(3)=0.75rem  sp(4)=1rem
+// sp(6)=1.5rem   sp(8)=2rem    sp(10)=2.5rem  sp(12)=3rem
+@function sp($n) { @return #{$n * 0.25}rem; }
 
 @import "minima";
 
@@ -36,8 +41,8 @@ body {
   background-color: $background-color;
   border-top: 3px solid $brand-color-dark;
   border-bottom: 1px solid $grey-color-light;
-  padding-top: 14px;
-  padding-bottom: 14px;
+  padding-top: sp(3);
+  padding-bottom: sp(3);
 }
 
 .site-title {
@@ -45,7 +50,6 @@ body {
   font-size: 1rem;
   letter-spacing: 0.04em;
   text-transform: lowercase;
-  color: $brand-color-dark;
   transition: color 0.15s ease;
 
   &, &:visited { color: $brand-color-dark; }
@@ -67,7 +71,7 @@ a {
   text-decoration: none;
   transition: color 0.15s ease;
 
-  &:hover { color: $link-hover-color; }
+  &:hover   { color: $link-hover-color; }
   &:visited { color: $link-visited-color; }
 }
 
@@ -77,13 +81,35 @@ h1, h2, h3, h4 {
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.3;
+}
+
+// Three-tier heading hierarchy via size + colour
+h1 {
+  font-size: 1.6rem;
   color: $brand-color-dark;
 }
 
-h2 { font-size: 1.15rem; margin-top: 2.2em; padding-bottom: 0.3em; border-bottom: 1px solid $grey-color-light; color: $brand-color-dark; }
-h3 { font-size: 1rem; margin-top: 1.8em; color: $brand-color-dark; }
+h2 {
+  font-size: 1.2rem;
+  color: $brand-color-dark;
+  margin-top: sp(10);
+  padding-bottom: sp(1);
+  border-bottom: 1px solid $grey-color-light;
+}
 
-p { margin-bottom: 1em; }
+h3 {
+  font-size: 1rem;
+  color: $brand-color;      // one step lighter than h2 — visible third tier
+  margin-top: sp(8);
+}
+
+h4 {
+  font-size: 0.95rem;
+  color: $grey-color-dark;
+  margin-top: sp(6);
+}
+
+p { margin-bottom: sp(4); }
 
 // ─── Post list ────────────────────────────────────────────────────────────────
 .post-list {
@@ -92,9 +118,8 @@ p { margin-bottom: 1em; }
   padding-left: 0;
 
   > li {
-    padding: 1.1em 0;
+    padding: sp(4) 0;
     border-bottom: 1px solid $grey-color-light;
-
     &:last-child { border-bottom: none; }
   }
 }
@@ -112,50 +137,53 @@ p { margin-bottom: 1em; }
   font-size: 0.97rem;
   font-weight: 600;
   color: $brand-color-dark;
-  margin-top: 0.2em;
+  margin-top: sp(1);
   transition: color 0.15s ease;
 
-  &:hover { color: $link-base-color; text-decoration: none; }
+  &:hover   { color: $link-base-color; text-decoration: none; }
   &:visited { color: $brand-color-dark; }
 }
 
 // ─── Post content ─────────────────────────────────────────────────────────────
 .post-header .post-title {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
+  color: $brand-color-dark;
 }
 
 .post-content {
   max-width: 680px;
 
-  p, li { line-height: 1.78; }
+  p, li { line-height: 1.75; }
 
-  ul, ol { padding-left: 1.4em; }
+  ul, ol { padding-left: sp(6); }
 
   // Inline code
   code {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.82em;
+    font-size: 0.83em;
     background-color: #ebe6d8;
     border: 1px solid #d6d0c2;
     border-radius: 3px;
-    padding: 0.1em 0.35em;
+    padding: 0.1em sp(1);
     color: $grey-color-dark;
   }
 
-  // Code blocks
-  pre {
-    background-color: #1e1e1e !important;
+  // Code blocks — (0,3,1) beats minima's .highlighter-rouge .highlight (0,2,0)
+  // and our own transparent reset (0,3,0) on the pre.highlight element
+  .highlighter-rouge pre.highlight {
+    background-color: #1e1e1e;
     border: none;
     border-radius: 6px;
-    padding: 1.1em 1.3em;
+    padding: sp(4) sp(5);
     overflow-x: auto;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-    color: #f8f8f2 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.14);
+    color: #f8f8f2;
+    margin: sp(6) 0;
 
     code {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.82em;
-      background: none !important;
+      font-size: 0.83em;
+      background: none;
       border: none;
       padding: 0;
       color: inherit;
@@ -167,23 +195,23 @@ p { margin-bottom: 1em; }
     width: 100%;
     border-collapse: collapse;
     font-size: 0.88rem;
-    margin: 1.5em 0;
+    margin: sp(6) 0;
 
     th {
       background-color: #ebe6d8;
       font-weight: 600;
       letter-spacing: 0.03em;
-      padding: 0.6em 1em;
+      padding: sp(2) sp(4);
       border-bottom: 2px solid $grey-color-light;
       text-align: left;
     }
 
     td {
-      padding: 0.55em 1em;
+      padding: sp(2) sp(4);
       border-bottom: 1px solid $grey-color-light;
     }
 
-    tr:last-child td { border-bottom: none; }
+    tr:last-child td  { border-bottom: none; }
     tr:nth-child(even) td { background-color: rgba(0,0,0,0.02); }
   }
 
@@ -191,16 +219,16 @@ p { margin-bottom: 1em; }
   blockquote {
     border-left: 3px solid $brand-color;
     background-color: rgba(139, 154, 109, 0.06);
-    padding: 0.6em 1.2em;
+    padding: sp(2) sp(6);
     color: $grey-color-dark;
     font-style: italic;
-    margin: 1.5em 0;
+    margin: sp(6) 0;
   }
 
   hr {
     border: none;
     border-top: 1px solid $grey-color-light;
-    margin: 2em 0;
+    margin: sp(8) 0;
   }
 }
 
@@ -211,20 +239,20 @@ details {
   border-left: 3px solid $brand-color;
   border-radius: 4px;
   box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-  padding: 1em 1.4em;
-  margin: 1.6em 0;
+  padding: sp(4) sp(6);
+  margin: sp(6) 0;
   font-size: 0.91em;
   color: $grey-color-dark;
 
   summary {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.82em;
+    font-size: 0.83em;        // unified with post-content code
     letter-spacing: 0.04em;
     color: $brand-color-dark;
     cursor: pointer;
     user-select: none;
-    margin: -1em -1.4em -1em -1.4em;
-    padding: 0.65em 1.4em;
+    margin: #{sp(-4)} #{sp(-6)} #{sp(-4)} #{sp(-6)};
+    padding: sp(2) sp(6);
     background-color: #f0ece0;
     border-bottom: 1px solid $grey-color-light;
     border-radius: 3px 3px 0 0;
@@ -232,65 +260,64 @@ details {
     transition: background-color 0.15s ease;
 
     &::-webkit-details-marker { display: none; }
-
-    &::before {
-      content: "▶  ";
-      font-size: 0.7em;
-      opacity: 0.6;
-    }
-
-    &:hover { background-color: #e8e3d6; }
+    &::before { content: "▶  "; font-size: 0.7em; opacity: 0.6; }
+    &:hover   { background-color: #e8e3d6; }
   }
 
   &[open] summary {
-    margin-bottom: 1.3em;
-    border-radius: 3px 3px 0 0;
+    margin-bottom: sp(4);
     &::before { content: "▼  "; }
   }
 
-  pre {
-    background-color: #1e1e1e !important;
-    border-radius: 5px;
-    padding: 0.9em 1.1em;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    color: #f8f8f2 !important;
+  // Code blocks inside details — same spec as .post-content pre
+  // Selector specificity (0,3,1) beats the transparent reset (0,3,0) above
+  .highlighter-rouge pre.highlight {
+    background-color: #1e1e1e;
+    border-radius: 6px;
+    padding: sp(4) sp(5);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.14);
+    color: #f8f8f2;
+    margin: sp(4) 0;
+    overflow-x: auto;
 
     code {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.82em;
-      background: none !important;
+      font-size: 0.83em;
+      background: none;
       border: none;
       padding: 0;
       color: inherit;
     }
   }
 
+  // Inline code inside details — same spec as .post-content code
   code {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.85em;
+    font-size: 0.83em;
     background-color: #ebe6d8;
     border: 1px solid #d6d0c2;
     border-radius: 3px;
-    padding: 0.1em 0.3em;
+    padding: 0.1em sp(1);
+    color: $grey-color-dark;
   }
 
-  hr { border: none; border-top: 1px solid $grey-color-light; margin: 1.4em 0; }
-  p, li { line-height: 1.68; }
+  p, li { line-height: 1.75; }   // unified with post-content
+  hr    { border: none; border-top: 1px solid $grey-color-light; margin: sp(6) 0; }
 }
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 .site-footer {
   background-color: $background-color;
   border-top: 1px solid $grey-color-light;
-  padding: 1.8em 0;
+  padding: sp(6) 0;
   text-align: center;
-  margin-top: 3em;
+  margin-top: sp(12);
 }
 
 .footer-social {
   display: flex;
   justify-content: center;
-  gap: 1.4em;
+  gap: sp(6);
 
   a {
     display: inline-flex;
@@ -309,3 +336,66 @@ details {
   height: 20px;
   fill: currentColor;
 }
+
+// ─── Syntax highlighting (dark background override) ───────────────────────────
+// Minima's defaults target a light bg (#eef). We remap every Rouge class
+// to colours that work on #1e1e1e (VS Code Dark+ palette).
+.post-content,
+details {
+  // Kill the light backgrounds minima forces on .highlight and .highlighter-rouge
+  .highlight,
+  .highlighter-rouge,
+  .highlighter-rouge .highlight {
+    background: transparent;
+  }
+
+  .highlight {
+    // Comments → muted green
+    .c, .cm, .c1, .cs, .cp { color: #6a9955; font-style: italic; }
+
+    // Keywords → blue
+    .k, .kc, .kd, .kp, .kr, .kw { color: #569cd6; font-weight: normal; }
+
+    // Types → teal
+    .kt { color: #4ec9b0; font-weight: normal; }
+
+    // Strings (all variants) → warm salmon
+    .s, .s1, .s2, .sb, .sc, .sd, .se, .sh, .si, .sx, .ss { color: #ce9178; }
+
+    // Regex → soft red
+    .sr { color: #d16969; }
+
+    // Numbers → light green
+    .m, .mf, .mh, .mi, .mo, .il { color: #b5cea8; }
+
+    // Functions / builtins → yellow
+    .nf, .nb, .bp { color: #dcdcaa; }
+
+    // Class names → teal
+    .nc { color: #4ec9b0; font-weight: normal; }
+
+    // Attributes / variables / constants → light blue
+    .na, .no, .nv, .vc, .vg, .vi { color: #9cdcfe; }
+
+    // Tags → blue
+    .nt { color: #569cd6; }
+
+    // Namespace / prompt → muted
+    .nn, .gp { color: #858585; }
+
+    // Operators → near-white
+    .o, .ow { color: #d4d4d4; font-weight: normal; }
+
+    // Generic output / subheading
+    .go { color: #858585; }
+    .gh, .gu { color: #858585; }
+
+    // Error → red
+    .err { color: #f44747; background-color: transparent; }
+
+    // Generic inserted/deleted
+    .gi { color: #b5cea8; background-color: transparent; }
+    .gd { color: #f44747; background-color: transparent; }
+  }
+}
+
