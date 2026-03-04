@@ -5,13 +5,15 @@ title: claude code - mining pr reviews
 
 ## the challenge
 
-Every development team accumulates valuable knowledge in their PR review comments—mistake patterns, architectural decisions, coding standards, hard-won lessons learned the painful way. 
+Every development team accumulates valuable knowledge in their PR review comments—mistake patterns, architectural decisions, coding standards, hard-won lessons learned the painful way.
 
 But this knowledge stays scattered across hundreds of PRs, rarely surfacing when developers need it most: before they submit their code.
 
 ## the process
 
-In a single conversation, I had Claude Code analyze 200 merged PRs from an enterprise codebase and categorize the patterns hiding in the review comments.
+After accumulating a backlog of PR feedback — I got curious about what patterns reviewers were actually seeing. Was I making the same mistakes repeatedly? Which categories kept coming up?
+
+Instead of reading through hundreds of review threads manually, I had Claude Code do it, for all users in the repository.
 
 ## the prompt
 
@@ -19,9 +21,19 @@ In a single conversation, I had Claude Code analyze 200 merged PRs from an enter
 Analyze the past 200 PRs in the repository and categorize the patterns from the review comments.
 ```
 
+One sentence. That's the entire input. What a human analyst would take days to produce manually — reading threads, spotting patterns, writing them up — came back in minutes.
+
 ### step 1: bulk data extraction
 
-Claude used the GitHub CLI to fetch 200 merged PRs with their metadata—number, title, author, merge date—then iterated through each one to extract every review comment.
+Claude used the GitHub CLI to fetch 200 merged PRs with their metadata, then iterated through each one to pull every review comment thread.
+
+```bash
+# list merged PRs
+gh pr list --state merged --limit 200 --json number,title,author,mergedAt > prs.json
+
+# for each PR, extract review comments
+gh api repos/{owner}/{repo}/pulls/{number}/comments
+```
 
 ### step 2: pattern recognition
 
@@ -138,7 +150,7 @@ Breaking changes to response keys, payload format changes without versioning, an
 
 ### step 4: knowledge persistence
 
-Using a custom `/learn` command, these insights get saved to a structured memory file that Claude Code references in future sessions. The system effectively teaches itself the team's standards over time.
+Using a custom `/learn` skill — a reusable Claude Code skill defined in `.claude/skills/learn/SKILL.md` that appends structured entries to a `lessons.md` file in the repo — these insights get saved to a memory file that Claude Code references in future sessions. The system effectively teaches itself the team's standards over time.
 
 Here's the actual output — seven entries written to `lessons.md`:
 
@@ -270,9 +282,12 @@ var latest = _db.Invoices
 
 ## what this enables
 
-New team members can absorb institutional knowledge before their first PR submission. 
+Manually going through 200 PRs — reading every thread, extracting the pattern, writing it up — is days of work that almost never gets done. The value is invisible until the knowledge is already structured, so it stays trapped in review history that nobody reads.
 
-Code reviewers can focus on architecture and business logic instead of catching the same patterns over and over. 
-The AI assistant grows smarter about the specific codebase with each session, and these learnings can be leveraged to have AI review the code proactively.
+This ran in one conversation.
+
+For me personally, seeing the categories laid out was clarifying in a way that individual review comments never are. A comment saying "wrap this in a transaction" is easy to fix and forget. A chart showing that transaction scope issues made up a significant slice of all feedback over months of PRs is harder to ignore.
+
+The compounding benefit is subtler: every future session that references `lessons.md` means the assistant already knows the specific failure modes reviewers have flagged. It starts catching them before a human reviewer ever sees the code.
 
 The loop closes when tribal knowledge becomes searchable reference.
