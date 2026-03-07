@@ -30,10 +30,11 @@ $grey-color-dark:    #4a4a4a;
 body {
   background-color: $background-color;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 40px;
+  font-size: 16px;
   line-height: 1.75;
   color: $text-color;
   -webkit-font-smoothing: antialiased;
+  zoom: 1.5;
 }
 
 // ─── Header ───────────────────────────────────────────────────────────────────
@@ -85,12 +86,12 @@ h1, h2, h3, h4 {
 
 // Three-tier heading hierarchy via size + colour
 h1 {
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   color: $brand-color-dark;
 }
 
 h2 {
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   color: $brand-color-dark;
   margin-top: sp(10);
   padding-bottom: sp(1);
@@ -111,9 +112,6 @@ h4 {
 
 p { margin-bottom: sp(4); }
 
-.home > p {
-  font-size: 0.93rem;
-}
 
 // ─── Post list ────────────────────────────────────────────────────────────────
 .post-list {
@@ -142,7 +140,7 @@ p { margin-bottom: sp(4); }
 }
 
 .post-link {
-  font-size: 0.93rem;
+  font-size: 1rem;
   font-weight: 500;
   color: $brand-color-dark;
   transition: color 0.15s ease;
@@ -153,9 +151,13 @@ p { margin-bottom: sp(4); }
 
 // ─── Post content ─────────────────────────────────────────────────────────────
 .post-header .post-title {
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   color: $brand-color-dark;
 }
+
+.post-content h2 { font-size: 1.05rem; }
+.post-content h3 { font-size: 1rem; }
+.post-content h4 { font-size: 0.95rem; }
 
 .post-content {
   max-width: 680px;

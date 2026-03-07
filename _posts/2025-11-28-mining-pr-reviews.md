@@ -5,15 +5,15 @@ title: claude code - mining pr reviews
 
 ## the challenge
 
-Every development team accumulates valuable knowledge in their PR review comments—mistake patterns, architectural decisions, coding standards, hard-won lessons learned the painful way.
+Every development team accumulates valuable knowledge in their PR review comments - mistake patterns, architectural decisions, coding standards, hard-won lessons learned the painful way.
 
 But this knowledge stays scattered across hundreds of PRs, rarely surfacing when developers need it most: before they submit their code.
 
 ## the process
 
-After accumulating a backlog of PR feedback — I got curious about what patterns reviewers were actually seeing. Was I making the same mistakes repeatedly? Which categories kept coming up?
+After accumulating a backlog of PR feedback, I got curious about what patterns reviewers were actually seeing. Was I making the same mistakes repeatedly? Which categories kept coming up?
 
-Instead of reading through hundreds of review threads manually, I had Claude Code do it, for all users in the repository.
+Instead of reading through hundreds of review threads manually, I had Claude Code do it - for all users in the repository.
 
 ## the prompt
 
@@ -21,7 +21,7 @@ Instead of reading through hundreds of review threads manually, I had Claude Cod
 Analyze the past 200 PRs in the repository and categorize the patterns from the review comments.
 ```
 
-One sentence. That's the entire input. What a human analyst would take days to produce manually — reading threads, spotting patterns, writing them up — came back in minutes.
+One sentence. That's the entire input. What a human analyst would take days to produce manually - reading threads, spotting patterns, writing them up - came back in minutes.
 
 ### step 1: bulk data extraction
 
@@ -150,18 +150,20 @@ Breaking changes to response keys, payload format changes without versioning, an
 
 ### step 4: knowledge persistence
 
-Using a custom `/learn` skill — a reusable Claude Code skill defined in `.claude/skills/learn/SKILL.md` that appends structured entries to a `lessons.md` file in the repo — these insights get saved to a memory file that Claude Code references in future sessions. The system effectively teaches itself the team's standards over time.
+Using a custom `/learn` skill - a reusable Claude Code skill defined in `.claude/skills/learn/SKILL.md` that appends structured entries to a `lessons.md` file in the repo - these insights get saved to a memory file that Claude Code references in future sessions.
 
-Here's the actual output — seven entries written to `lessons.md`:
+The system effectively teaches itself the team's standards over time.
+
+Here's the actual output - seven entries written to `lessons.md`:
 
 <details markdown="1">
 <summary>view lessons.md entries</summary>
 
 ---
 
-**Entry 1 — logic: boolean operator precedence**
+**Entry 1 - logic: boolean operator precedence**
 
-`&&` binds tighter than `||`. When both appear in the same condition without parentheses, the evaluation order is likely not what the developer intended — and in access-control logic, it becomes a security bug. Always use explicit grouping.
+`&&` binds tighter than `||`. When both appear in the same condition without parentheses, the evaluation order is likely not what the developer intended - and in access-control logic, it becomes a security bug. Always use explicit grouping.
 
 ```csharp
 // ❌ Reads like "(guest or authenticated) AND terms accepted"
@@ -177,7 +179,7 @@ if ((isGuest || isAuthenticated) && hasAcceptedTerms)
 
 ---
 
-**Entry 2 — logic: exception type too narrow**
+**Entry 2 - logic: exception type too narrow**
 
 Catching `JsonReaderException` misses other failure modes in the `System.Text.Json` and `Newtonsoft.Json` hierarchies. Catch the base `JsonException` unless there is a deliberate reason to handle a specific subtype.
 
@@ -193,16 +195,16 @@ catch (JsonException ex)
 
 ---
 
-**Entry 3 — data integrity: validation accumulation**
+**Entry 3 - data integrity: validation accumulation**
 
-Using `=` to collect validation results silently discards earlier failures — the last assignment wins. Use `&=` so any failure propagates through to the final result.
+Using `=` to collect validation results silently discards earlier failures - the last assignment wins. Use `&=` so any failure propagates through to the final result.
 
 ```csharp
-// ❌ Overwrites — earlier failures are lost
+// ❌ Overwrites - earlier failures are lost
 valid = ValidateRequiredFields();
 valid = ValidateCustomFields();
 
-// ✅ Accumulates — any failure is preserved
+// ✅ Accumulates - any failure is preserved
 valid &= ValidateRequiredFields();
 valid &= ValidateCustomFields();
 ```
@@ -211,7 +213,7 @@ valid &= ValidateCustomFields();
 
 ---
 
-**Entry 4 — performance: HashSet allocated on every property access**
+**Entry 4 - performance: HashSet allocated on every property access**
 
 A property getter that calls `.ToHashSet()` constructs a new collection on every read. If the property is accessed in a loop this creates significant allocation pressure. Cache the result in a backing field.
 
@@ -231,16 +233,16 @@ public HashSet<string> ExcludedItems => _excludedItems;
 
 ---
 
-**Entry 5 — testing: async NSubstitute stubs must wrap in Task**
+**Entry 5 - testing: async NSubstitute stubs must wrap in Task**
 
-NSubstitute stubs for `async` methods must return `Task.FromResult(value)`, not the value directly. Passing the entity compiles but the stub will not resolve correctly. Null returns also need explicit wrapping — `ReturnsNull()` does not work for async methods.
+NSubstitute stubs for `async` methods must return `Task.FromResult(value)`, not the value directly. Passing the entity compiles but the stub will not resolve correctly. Null returns also need explicit wrapping - `ReturnsNull()` does not work for async methods.
 
 ```csharp
-// ❌ Wrong — compiles but stub doesn't resolve
+// ❌ Wrong - compiles but stub doesn't resolve
 _repository.GetByIdAsync(id).Returns(entity);
 _repository.GetByIdAsync(id).ReturnsNull();
 
-// ✅ Correct — Task wrapper required for both cases
+// ✅ Correct - Task wrapper required for both cases
 _repository.GetByIdAsync(id).Returns(Task.FromResult(entity));
 _repository.GetByIdAsync(id).Returns(Task.FromResult<Entity>(null));
 ```
@@ -249,7 +251,7 @@ _repository.GetByIdAsync(id).Returns(Task.FromResult<Entity>(null));
 
 ---
 
-**Entry 6 — transaction scope: HTTP calls inside open transactions**
+**Entry 6 - transaction scope: HTTP calls inside open transactions**
 
 Making HTTP calls while a database transaction is open holds the connection and any acquired locks for the duration of the network round-trip. This is a common cause of lock contention and deadlocks under load. Perform all external calls before opening the transaction, or after committing.
 
@@ -271,17 +273,17 @@ await tx.CommitAsync();
 
 ---
 
-**Entry 7 — database: FirstOrDefault without OrderBy is non-deterministic**
+**Entry 7 - database: FirstOrDefault without OrderBy is non-deterministic**
 
 SQL Server does not guarantee row order without an explicit `ORDER BY`. `FirstOrDefault()` on an unordered query returns stable results in development but can vary in production as index state changes. Always pair `First`/`FirstOrDefault` with explicit ordering.
 
 ```csharp
-// ❌ Non-deterministic — depends on index state
+// ❌ Non-deterministic - depends on index state
 var latest = _db.Invoices
     .Where(x => x.ClientId == id)
     .FirstOrDefault();
 
-// ✅ Deterministic — explicit ordering
+// ✅ Deterministic - explicit ordering
 var latest = _db.Invoices
     .Where(x => x.ClientId == id)
     .OrderByDescending(x => x.CreatedAt)
@@ -296,11 +298,13 @@ var latest = _db.Invoices
 
 ## what this enables
 
-Manually going through 200 PRs — reading every thread, extracting the pattern, writing it up — is days of work that almost never gets done. The value is invisible until the knowledge is already structured, so it stays trapped in review history that nobody reads.
+Manually going through 200 PRs - reading every thread, extracting the pattern, writing it up - is days of work that almost never gets done.
 
-This ran in one conversation.
+The value is invisible until the knowledge is already structured, so it stays trapped in review history that nobody reads. This ran in one conversation.
 
-For me personally, seeing the categories laid out was clarifying in a way that individual review comments never are. A comment saying "wrap this in a transaction" is easy to fix and forget. A chart showing that transaction scope issues made up a significant slice of all feedback over months of PRs is harder to ignore.
+For me personally, seeing the categories laid out was clarifying in a way that individual review comments never are. A comment saying "wrap this in a transaction" is easy to fix and forget.
+
+A chart showing that transaction scope issues made up a significant slice of all feedback over months of PRs is harder to ignore.
 
 The compounding benefit is subtler: every future session that references `lessons.md` means the assistant already knows the specific failure modes reviewers have flagged. It starts catching them before a human reviewer ever sees the code.
 
