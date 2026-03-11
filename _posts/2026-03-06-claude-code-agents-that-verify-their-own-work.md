@@ -10,8 +10,6 @@ AI made writing code cheap. Verification is now the bottleneck.
 Did the code actually work end to end? Did it break something else? The agent has no idea unless you give it a feedback loop.
 If we are meant to treat AI agents as independent engineers, the minimum we should expect is that the code passes a happy path test locally.
 
-tl;dr: give the agent a way to (1) start the local services, (2) run the same API test collection your team already uses, (3) parse the results, and (4) retry until it passes.
-
 **Give the agent a way to verify its own work.**
 
 An agent that writes code, runs it against a live system, reads the result, and fixes what's broken is possible. This applies at every stage:
@@ -21,6 +19,8 @@ An agent that writes code, runs it against a live system, reads the result, and 
 - **A live end-to-end test loop**: prepare the local environment and verify the implementation end to end
 
 Each is a different kind of feedback loop. Chain them together and the agent gets all three before anything ships.
+
+tl;dr: give the agent a way to (1) start the local services, (2) run the same API  test collection your team already uses, (3) parse the results, and (4) retry until it passes.
 
 ## the key idea: API test collections as the verification layer
 
@@ -62,7 +62,7 @@ In my case I'm building tools for an AI chatbot, so the verification is: did the
 
 Bruno CLI doesn't persist cookies or environment variables between separate `bru run` invocations. So the agent has to include the login step in every call and pass extracted values explicitly via `--env-var`.
 
-The [skill](https://code.claude.com/docs/en/skills) encodes these quirks so the agent handles them automatically.
+The [skill](https://docs.anthropic.com/en/docs/claude-code/skills) encodes these quirks so the agent handles them automatically.
 
 This same approach works with any API client that has a CLI. Postman has `newman`. Insomnia has `inso`.
 
@@ -89,7 +89,7 @@ curl http://localhost:2001/healthz/readiness  # → {"status": "ready"}
 curl http://localhost:8000/healthz            # → {"status": "ready"}
 ```
 
-The skill encodes the operational knowledge: which ports each service runs on, which health endpoints to check, how long to wait before giving up, and environment-specific quirks (like setting `PYTHONIOENCODING=utf-8` on Windows to prevent emoji in log statements from crashing the process).
+The skill encodes the operational knowledge: which ports each service runs on, which health endpoints to check, how long to wait before giving up, and environment-specific quirks (like setting `PYTHONIOENCODING=utf-8` on Windows to prevent emojis in log statements from crashing the process).
 
 When something fails, the skill knows where to look. Log paths are baked in - so when the live test returns unexpected results, the agent reads the server logs, diagnoses the issue, and fixes it without the human pointing at a stack trace.
 
@@ -103,9 +103,9 @@ That loop, automated.
 
 ## the full pipeline
 
-I wired this together using [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/slash-commands) - markdown files that define a sequence of instructions the agent follows when you invoke them as `/slash-commands`.
+I wired this together using [Claude Code skills](https://code.claude.com/docs/en/slash-commands) - markdown files that define a sequence of instructions the agent follows when you invoke them as `/slash-commands`.
 
-One orchestrating skill chains sub-skills into a build-test-review-ship pipeline. One command, one input, three phases.
+One orchestrating skill chains sub-skills into a build-test-review-ship pipeline. One command, one input, three stages.
 
 The input is a story describing what the tool should do. Everything else is automated.
 
@@ -157,7 +157,7 @@ A sub-skill handles the implementation:
 
 The skill restarts all services, waits for health checks, then runs the Bruno verification flow described above.
 
-The success criteria isn't "did the service return 200." It's: did the AI agent choose to use the new tool, and did its response contain data that could only have come from that tool?
+The success criterion isn't "did the service return 200." It's: did the AI agent choose to use the new tool, and did its response contain data that could only have come from that tool?
 
 The skill parses the JSON output from Bruno and checks both.
 
@@ -169,30 +169,30 @@ Second attempt passed. This is exactly the kind of failure that unit tests can't
 
 ### phases 3: review, fix, ship
 
-Multiple review agents — [Claude Code sub-agents](https://code.claude.com/docs/en/sub-agents) with no knowledge of the main context window — run in parallel, one per repository. They check correctness, security, performance, maintainability, and standards compliance.
+Multiple review agents - [Claude Code sub-agents](https://docs.anthropic.com/en/docs/claude-code/sub-agents) with no knowledge of the main context window - run in parallel, one per repository. They check correctness, security, performance, maintainability, and standards compliance.
 
-The most notable find: `not {}` evaluates to `True` in Python — empty dicts are falsy. An auth guard using `not token.claims` silently passes for an empty claims dict and blows up downstream instead of returning a clean auth error.
+The most notable find: `not {}` evaluates to `True` in Python - empty dicts are falsy. An auth guard using `not token.claims` silently passes for an empty claims dict and blows up downstream, instead of returning a clean auth error.
 
 | Priority | Issue |
 |----------|-------|
-| High | Auth guard used `not token.claims` — falsy for empty dict `{}` |
+| High | Auth guard used `not token.claims` - falsy for empty dict `{}` |
 | High | No error handling test for partial failure in parallel calls |
 | Medium | Dead model left behind after refactor |
 | Medium | Test mocks relied on positional call ordering — fragile |
 | Low | Import ordering (stdlib after local) |
 
-The agent wrote the code, a separate review process found problems in it, the agent fixed those problems, re-ran the tests, then branched, committed, and pushed — write, review, fix, ship, without a human in between.
+The agent wrote the code. A separate review process found problems in it. The agent fixed those problems, re-ran the tests, then branched, committed, and pushed - write, review, fix, ship, without a human in between.
 
-Every phase either produces a pass/fail signal or a list of issues. Failures trigger diagnosis and retry. Issues trigger fixes and re-verification. The agent never moves forward without confirmation that the previous step actually worked.
+Every phase either produces a pass/fail signal or a list of issues. Failures trigger diagnosis and retry. Issues trigger fixes and re-verification. The agent never moves forward without confirmation that the previous step worked.
 
 ## what this changes
 
 
-Without verification loops, AI is reduced to a code generator: fast, but blind. With a verification loop, the agent closes its own feedback cycle. And once an agent can verify its own work, you can run several in parallel — each on a different story, each self-checking. The bottleneck shifts from the AI to the human pilot's ability to hold context across all of them.
+Without verification loops, AI is reduced to a code generator: fast, but blind. With a verification loop, the agent closes its own feedback cycle. And once an agent can verify its own work, you can run several in parallel - each on a different story, each self-checking. The bottleneck shifts from the AI to the human pilot's ability to hold context across all of them.
 
 The core enabler in this case is mundane: an API test collection with a CLI. Most teams already have this.
 
-The agent doesn't need special infrastructure or custom test harnesses - it needs access to the same tools the team already uses to test manually, just invoked from the command line instead of a GUI.
+The agent doesn't need special infrastructure or custom test harnesses. It needs access to the same tools the team already uses to test manually, just invoked from the command line instead of a GUI.
 
 Three things made this work:
 
@@ -202,10 +202,10 @@ Three things made this work:
 
 3. **Self-review as a separate pass.** The agent that wrote the code is not the same instance that reviews it. Fresh context, fresh analysis. It catches things the builder missed because it's looking at the code without the tunnel (or context window) vision of having just written it.
 
-This isn't foolproof. The agent can't always diagnose a failure from logs alone. A passing live test doesn't guarantee correctness - it guarantees the specific scenario tested worked. The agent misses things that require domain knowledge it doesn't have.
+This isn't foolproof. The agent can't always diagnose a failure from logs alone. A passing live test doesn't guarantee correctness - it guarantees the tested scenario worked. The agent misses things that require domain knowledge it doesn't have.
 
 The human still reviews, still tests edge cases, still makes the judgment calls. But the mechanical verification loop - start, test, read, fix, retry - is no longer manual.
 
-The constraint is still the human in the loop - I pick the story, approve the push, and still test it.
+The constraint is still the human in the loop. I pick the story, approve the push, and still test it.
 
 But the mechanical work between those decisions is gone, and the verification that used to be manual is now built into the pipeline itself.
