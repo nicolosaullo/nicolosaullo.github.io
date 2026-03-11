@@ -5,19 +5,20 @@ title: claude code - agents that verify their own work
 
 ## the problem
 
-A lot of developers have adopted AI tools but they are using them to assist or replace phases of traditional software development. The agent writes code, the human (and sometimes agents) checks it, the human tests it, the human ships it.
+AI made writing code cheap. Verification is now the bottleneck.
 
-The bottleneck has moved from code generation to its verification. Did the code actually work? Did it break something else? The agent has no idea.
+Did the code actually work end to end? Did it break something else? The agent has no idea unless you give it a feedback loop.
+If we are meant to treat AI agents as independent engineers, the minimum we should expect is that the code passes a happy path test locally.
 
-If we are meant to treat AI Agents as independent engineers, the minimum we could ask is for the code to be passing a happy path test locally.
+tl;dr: give the agent a way to (1) start the local services, (2) run the same API test collection your team already uses, (3) parse the results, and (4) retry until it passes.
 
 **Give the agent a way to verify its own work.**
 
 An agent that writes code, runs it against a live system, reads the result, and fixes what's broken is possible. This applies at every stage:
 
-- **Unit tests** verify logic in isolation (most people are already doing this, they mostly have value for regressions)
-- **A code review** verifies quality, security, and standards (agentic review on GitHub PRs is good, a pre-commit agent that spins locally is better)
-- most importantly **a live end-to-end test agent** prepares the local environment and self-verifies the implementation end to end.
+- **Unit tests**: logic in isolation + regressions
+- **Code review**: quality, security, standards
+- **A live end-to-end test loop**: prepare the local environment and verify the implementation end to end
 
 Each is a different kind of feedback loop. Chain them together and the agent gets all three before anything ships.
 
@@ -38,34 +39,30 @@ In my case, I use [Bruno](https://www.usebruno.com/) - an open-source API client
 Bruno has a CLI (`bru run`) that executes requests, runs inline test assertions, and outputs JSON results. The agent can:
 
 1. **Edit the request body** - Bruno files are just text, so the agent writes the test message directly into the `.bru` file
-2. **Run the collection** - `bru run "Login" "Post Message.bru" --env local -o /tmp/result.json -f json`
+2. **Run the collection** - `bru run "Login" "Post Message.bru" --env local -o ./result.json -f json`
 3. **Read the output** - parse the JSON to extract the response, check which tools were used, verify the data
 
-In this specific instance, I am building MCP tools for an AI chatbot. The flow looks like this:
+The general flow looks like this:
 
 ```
-claude edits Bruno request body
+agent edits the request body in a test file
          ↓
-claude runs: bru run "Login" "Post Message" --env local
+agent runs the test from the command line
          ↓
-backend receives the message
+the system under test processes the request end to end
          ↓
-my agent server picks the right tool from the MCP server
+agent runs follow-up request(s) to fetch the result
          ↓
-MCP server makes the actual service calls
+agent parses the output
          ↓
-response flows back through the conversation API
-         ↓
-claude runs: bru run "Login" "Get Conversation" --env local
-         ↓
-claude parses the JSON output
-         ↓
-claude checks: was my new tool used? does the response contain the expected data?
+agent checks: did the system behave as expected? is the response data correct?
 ```
+
+In my case I'm building tools for an AI chatbot, so the verification is: did the chatbot choose to use the new tool, and does the response contain data that could only have come from it?
 
 Bruno CLI doesn't persist cookies or environment variables between separate `bru run` invocations. So the agent has to include the login step in every call and pass extracted values explicitly via `--env-var`.
 
-The skill encodes these quirks so the agent handles them automatically.
+The [skill](https://code.claude.com/docs/en/skills) encodes these quirks so the agent handles them automatically.
 
 This same approach works with any API client that has a CLI. Postman has `newman`. Insomnia has `inso`.
 
@@ -82,13 +79,14 @@ API tests are useless if there's nothing running to test against. The agent need
 Claude Code can run processes in the background. The skill uses this to start each microservice, then polls their health endpoints until they're ready:
 
 ```bash
+# example (bash-like syntax)
 # start services in the background
 uvicorn mcp_server:app --port 2001 &
 uvicorn agent_server:app --port 8000 &
 
 # poll until healthy
 curl http://localhost:2001/healthz/readiness  # → {"status": "ready"}
-curl http://localhost:8000/                   # → {"status": "UP"}
+curl http://localhost:8000/healthz            # → {"status": "ready"}
 ```
 
 The skill encodes the operational knowledge: which ports each service runs on, which health endpoints to check, how long to wait before giving up, and environment-specific quirks (like setting `PYTHONIOENCODING=utf-8` on Windows to prevent emoji in log statements from crashing the process).
@@ -107,7 +105,7 @@ That loop, automated.
 
 I wired this together using [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/slash-commands) - markdown files that define a sequence of instructions the agent follows when you invoke them as `/slash-commands`.
 
-One orchestrating skill chains sub-skills into a build-test-review-ship pipeline. One command, one input, six phases.
+One orchestrating skill chains sub-skills into a build-test-review-ship pipeline. One command, one input, three phases.
 
 The input is a story describing what the tool should do. Everything else is automated.
 
@@ -132,19 +130,13 @@ Phase 2: Live Test (Bruno CLI)
   → restore modified test files to avoid dirty diffs
   ↓ feedback loop: if fail → read server logs → diagnose → fix → retry
 
-Phase 3: Review
+Phase 3: Review, Fix, Ship
   → parallel review of repos via sub-agents
-  → structured action items by priority
-  ↓ feedback loop: issues feed into phase 4
-
-Phase 4: Fix
   → address critical and high issues
   → re-run unit tests
-  ↓ feedback loop: tests must still pass
-
-Phase 5: Ship
   → branch, commit, push
   → output final pass/fail summary
+  ↓ feedback loop: issues trigger fixes, fixes trigger re-verification
 ```
 
 </details>
@@ -173,49 +165,30 @@ The first attempt failed. One of the service endpoints returned a 404. The mocks
 
 The skill diagnosed it from the server logs, found that the service contract path didn't match the expected endpoint, switched to an alternative method, updated the response model, fixed the tests, and retried.
 
-Second attempt passed. This is exactly the kind of failure that unit tests can't catch. In practice, the live test surfaces something the mocks missed more often than not.
+Second attempt passed. This is exactly the kind of failure that unit tests can't catch. In practice, the live test often surfaces something the mocks missed.
 
-### phase 3: review - the agent reviews itself
+### phases 3: review, fix, ship
 
-Multiple review agents - [Claude Code sub-agents](https://code.claude.com/docs/en/sub-agents) that have no knowledge of the main context window and act as impartial reviewers - run in parallel, one for each repository.
+Multiple review agents — [Claude Code sub-agents](https://code.claude.com/docs/en/sub-agents) with no knowledge of the main context window — run in parallel, one per repository. They check correctness, security, performance, maintainability, and standards compliance.
 
-They check correctness, security, performance, maintainability, testing, architecture, and standards compliance. In this specific case a review found:
-
-The most notable for non-Python readers: `not {}` evaluates to `True` in Python — empty dicts are falsy. An auth guard using `not token.claims` silently passes for an empty claims dict and blows up downstream instead of returning a clean auth error.
+The most notable find: `not {}` evaluates to `True` in Python — empty dicts are falsy. An auth guard using `not token.claims` silently passes for an empty claims dict and blows up downstream instead of returning a clean auth error.
 
 | Priority | Issue |
 |----------|-------|
-| High | Auth guard used `not token.claims` - falsy for empty dict `{}` |
+| High | Auth guard used `not token.claims` — falsy for empty dict `{}` |
 | High | No error handling test for partial failure in parallel calls |
 | Medium | Dead model left behind after refactor |
-| Medium | Test mocks relied on positional call ordering - fragile |
+| Medium | Test mocks relied on positional call ordering — fragile |
 | Low | Import ordering (stdlib after local) |
 
-The agent reviewing its own work caught it before any human saw the code.
-
-### phase 4: fix
-
-Each issue gets addressed. Tests re-run. Still passing.
-
-The agent wrote the code, then a separate review process found problems in it, then the agent fixed those problems. Write, review, fix - without a human in between.
-
-### phase 5: ship
-
-Creates feature branches from latest `main` on all repos, resolves merge conflicts, commits, pushes, and outputs a final summary:
-
-```
-Live test:   PASS (tool used, response verified)
-Review:      All issues addressed
-Tests:       14 passing
-Branches:    pushed
-```
+The agent wrote the code, a separate review process found problems in it, the agent fixed those problems, re-ran the tests, then branched, committed, and pushed — write, review, fix, ship, without a human in between.
 
 Every phase either produces a pass/fail signal or a list of issues. Failures trigger diagnosis and retry. Issues trigger fixes and re-verification. The agent never moves forward without confirmation that the previous step actually worked.
 
 ## what this changes
 
 
-Without verification loops, the workflow leverages AI only in a simplistic way. With a verification loop, n agents are now able to run in parallel. The limit becomes the executive function and ability to hold context of the human pilot, not of the AI.
+Without verification loops, AI is reduced to a code generator: fast, but blind. With a verification loop, the agent closes its own feedback cycle. And once an agent can verify its own work, you can run several in parallel — each on a different story, each self-checking. The bottleneck shifts from the AI to the human pilot's ability to hold context across all of them.
 
 The core enabler in this case is mundane: an API test collection with a CLI. Most teams already have this.
 
@@ -233,6 +206,6 @@ This isn't foolproof. The agent can't always diagnose a failure from logs alone.
 
 The human still reviews, still tests edge cases, still makes the judgment calls. But the mechanical verification loop - start, test, read, fix, retry - is no longer manual.
 
-The constraint is still the human in the loop - I pick the story, confirm the ticket ID, approve the push, and obviously, still test it.
+The constraint is still the human in the loop - I pick the story, approve the push, and still test it.
 
 But the mechanical work between those decisions is gone, and the verification that used to be manual is now built into the pipeline itself.
