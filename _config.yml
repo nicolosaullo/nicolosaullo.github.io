@@ -1,3 +1,8 @@
 title: "~nicolosaullo"
 theme: minima
 markdown: kramdown
+
+minima:
+  header_pages:
+    - projects.md
+    - links.md
